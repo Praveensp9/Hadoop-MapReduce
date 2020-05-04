@@ -1,0 +1,34 @@
+package com.hadoop.facebook;
+
+import java.io.IOException;
+
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.mapreduce.Mapper;
+
+/**
+ * Emits Tuple <ad_id, clickCount, conversionCount>
+ */
+public class FacebookMapper    extends Mapper<LongWritable, Text, Text, Text>
+{
+
+    private Text category = new Text();
+    private Text adInfo = new Text();
+
+    @Override
+    protected void map(LongWritable key, Text value, Context c)	throws IOException, java.lang.InterruptedException
+    {
+
+	/*
+	 * ad_id,ad_date,location,category,clicks#,conversions#,age group
+	 */
+	String line = value.toString();
+	/* Split csv string */
+	String[] words = line.split(",");
+	
+	category.set(words[3]);
+	adInfo.set(words[1] + "," +  words[2] + "," + words[4] + "," +  words[5]);
+	
+	c.write(category, adInfo);
+    }
+}

@@ -1,0 +1,77 @@
+package com.hadoop.facebook;
+
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.io.IOException;
+
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer;
+
+public class FacebookReducer extends Reducer<Text, Text, Text, Text>
+{
+    private Text outVal = new Text();
+    @Override
+    protected void reduce(Text key, Iterable<Text> values, Context c)throws IOException, java.lang.InterruptedException
+    {
+	/* 
+	 * key: city
+	 * value: HashMap<month, total_success_rate, count>
+	 */
+	HashMap<String, HashMap<String, String>> cityData =  new HashMap<String, HashMap<String, String>>();
+	
+	Iterator<Text> valuesIter = values.iterator();
+	/* all data for each customer */
+	while (valuesIter.hasNext())
+	{
+	    String f = valuesIter.next().toString();
+
+	    String[] words = f.split(",");
+  
+	    String month = words[0].trim().split("-")[1];
+	    String location = words[1].trim().toLowerCase();
+	    int clickCount = Integer.parseInt(words[2]);
+	    int conversionCount = Integer.parseInt(words[3]);
+	    
+	    Double succRate = new Double(conversionCount/(clickCount*1.0)*100);
+
+	    if (cityData.containsKey(location))
+	    {
+		HashMap<String, String> hv = cityData.get(location);
+
+		if (hv.containsKey(month))
+		{
+		    String[] hValues = hv.get(month).split(",");
+		
+		    Double totalSuccRate = Double.parseDouble(hValues[0]) + succRate;
+		    int totalCount = Integer.parseInt(hValues[1]) + 1;
+
+		    hv.put(month, totalSuccRate + "," + totalCount);
+		}
+		else
+		{
+		    hv.put(month, succRate + ",1");
+		}
+		cityData.put(location, hv);
+	    }
+	    else
+	    {
+		HashMap<String, String> hv = new HashMap();
+		hv.put(month, succRate + ",1");
+		cityData.put(location, hv);
+	    }
+	}
+
+	for (Map.Entry<String, HashMap<String, String>> e : cityData.entrySet()) 
+	{
+	    HashMap<String, String> hv = e.getValue();
+
+	    for (Map.Entry<String, String> e2 : hv.entrySet()) 
+	    {
+		String[] hValues = e2.getValue().split(",");
+		Double avgSccRate = Double.parseDouble(hValues[0])/Integer.parseInt(hValues[1]);
+		c.write(key, new Text(e.getKey() + "," + e2.getKey() + "," + avgSccRate));
+	    }
+	}
+    }
+}

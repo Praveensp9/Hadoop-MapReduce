@@ -1,0 +1,41 @@
+package org.hadoop.praveen;
+
+
+import java.io.IOException;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+public class Counters {
+
+	public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException
+    {
+
+		Path inputPath = new Path("hdfs://localhost:9000/user/jivesh/counter");
+		Path outputDir = new Path("hdfs://localhost:9000/user/jivesh/output");
+	
+		Configuration conf = new Configuration();
+		Job job = new Job(conf, "Counters");
+		
+		// name of driver class 
+		job.setJarByClass(Counters.class);
+		//name of Mapper class 
+		job.setMapperClass(Dept_Mapper.class);
+		// name of Reducer class 
+		job.setReducerClass(MyReducer.class);
+	
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(Text.class);
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(IntWritable.class);
+		
+		FileInputFormat.addInputPath(job, inputPath);
+		FileOutputFormat.setOutputPath(job, outputDir);
+		outputDir.getFileSystem(job.getConfiguration()).delete(outputDir,true);
+		job.waitForCompletion(true);
+    }
+}
